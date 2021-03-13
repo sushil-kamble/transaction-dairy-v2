@@ -3,9 +3,7 @@
     <v-app-bar color="secondary" dense dark app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-spacer></v-spacer>
-      <v-toolbar-title v-if="user"
-        >{{ user.displayName }}'s Daily</v-toolbar-title
-      >
+      <v-toolbar-title v-if="user">{{ user.name }}'s Daily</v-toolbar-title>
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" absolute temporary>
       <v-list nav>
@@ -19,12 +17,12 @@
 
           <v-divider class="mt-2 mb-4"></v-divider>
 
-          <v-list-item :to="{ name: 'Home' }">
+          <v-list-item :to="user ? { name: 'Home' } : { name: 'Welcome' }">
             <v-list-item-title>Home</v-list-item-title>
           </v-list-item>
 
-          <v-list-item>
-            <v-list-item-title>Groups</v-list-item-title>
+          <v-list-item :to="{ name: 'Profile' }">
+            <v-list-item-title>Profile</v-list-item-title>
           </v-list-item>
 
           <v-list-item :to="{ name: 'History' }">

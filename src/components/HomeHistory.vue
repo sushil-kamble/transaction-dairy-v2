@@ -14,7 +14,12 @@
       class="mt-3"
     >
       <template v-slot:item.amount="{ item }">
-        <v-chip :color="item.from === 'Sushil' ? 'green' : 'red'" dark small>
+        <v-chip
+          label
+          :color="item.from === 'Sushil' ? 'green' : 'red'"
+          dark
+          small
+        >
           {{ item.amount }}
         </v-chip>
       </template>

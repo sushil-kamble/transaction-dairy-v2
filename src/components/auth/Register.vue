@@ -4,7 +4,7 @@
       <v-card-title class="ma-0 px-0 blue-grey darken-3 white--text">
         <h1 class="pl-4">Register</h1>
       </v-card-title>
-      <v-form class="pa-4" @submit.prevent="registed" autocomplete="off">
+      <v-form class="pa-4" @submit.prevent="register" autocomplete="off">
         <v-text-field
           label="Enter Name"
           :rules="[rules.required]"
@@ -58,7 +58,7 @@
 </template>
 
 <script>
-import { auth } from "@/firebase/init.js";
+import { auth, db } from "@/firebase/init.js";
 
 export default {
   name: "Register",
@@ -85,13 +85,13 @@ export default {
   },
   methods: {
     validateEmail(email) {
-      const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
       return re.test(String(email).toLowerCase());
     },
     validateConfirmPassword() {
       return this.password === this.confirmPassword;
     },
-    registed() {
+    register() {
       if (
         this.validateEmail(this.email) &&
         this.validateConfirmPassword() &&
@@ -106,9 +106,22 @@ export default {
                 displayName: this.name
               })
               .then(() => {
-                this.$store.dispatch("fetchUser", data.user);
-                this.feedback = "";
-                this.loading = false;
+                this.$store.dispatch("fetchUser", data.user).then(() => {
+                  const batch = db.batch();
+                  batch.set(db.collection("users").doc(data.user.uid), {
+                    id: data.user.uid,
+                    name: data.user.displayName,
+                    email: data.user.email
+                  });
+                  batch.set(db.collection("displayName").doc(data.user.uid), {
+                    id: data.user.uid,
+                    name: data.user.displayName
+                  });
+                  batch.commit().then(() => {
+                    this.feedback = "";
+                    this.loading = false;
+                  });
+                });
               });
             this.$router.replace({ name: "Home" });
           })

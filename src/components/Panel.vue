@@ -1,6 +1,6 @@
 <template>
   <v-row class="mt-4">
-    <v-col cols="6">
+    <v-col cols="12" sm="6">
       <v-card height="220" class="pa-1">
         <v-list dense>
           <v-subheader>Group Name</v-subheader>
@@ -12,12 +12,15 @@
               <v-list-item-content>
                 <v-list-item-title v-text="item.text"></v-list-item-title>
               </v-list-item-content>
+              <v-list-item-action>
+                <v-chip label x-small>90</v-chip>
+              </v-list-item-action>
             </v-list-item>
           </v-list-item-group>
         </v-list>
       </v-card>
     </v-col>
-    <v-col cols="6">
+    <v-col cols="12" sm="6">
       <v-card height="220" class="pa-1 text-center">
         <h2>Computed Profit</h2>
         <v-divider class="mt-2"></v-divider>
@@ -34,10 +37,10 @@ export default {
   data() {
     return {
       items: [
-        { text: "Hrushi", icon: "mdi-clock" },
+        { text: "Hrushi", icon: "mdi-account" },
         { text: "Sarvajeet", icon: "mdi-account" },
-        { text: "Sayyam", icon: "mdi-flag" },
-        { text: "XYZ", icon: "mdi-flag" }
+        { text: "Sayyam", icon: "mdi-account" },
+        { text: "XYZ", icon: "mdi-account" }
       ]
     };
   }

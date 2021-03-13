@@ -9,7 +9,16 @@ const routes = [
   {
     path: "/",
     name: "Home",
-    component: Home
+    component: Home,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: "/welcome",
+    name: "Welcome",
+    component: () =>
+      import(/* webpackChunkName: "groups" */ "../views/Welcome.vue")
   },
   {
     path: "/about",
@@ -29,16 +38,13 @@ const routes = [
     path: "/history",
     name: "History",
     component: () =>
-      import(/* webpackChunkName: "profile" */ "../views/History.vue"),
-    meta: {
-      requiresAuth: true
-    }
+      import(/* webpackChunkName: "profile" */ "../views/History.vue")
   },
   {
     path: "/profile",
     name: "Profile",
     component: () =>
-      import(/* webpackChunkName: "profile" */ "../views/Profile.vue"),
+      import(/* webpackChunkName: "groups" */ "../views/Profile.vue"),
     meta: {
       requiresAuth: true
     }

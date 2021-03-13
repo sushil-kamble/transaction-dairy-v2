@@ -12,11 +12,11 @@
       type="number"
       outlined
       dense
-      autcomplete="off"
+      autocomplete="off"
     ></v-text-field>
 
     <v-select
-      :items="groups"
+      :items="user.groups"
       v-model="group"
       label="Group"
       outlined
@@ -26,12 +26,13 @@
 
     <v-select
       v-model="select"
-      :items="items"
+      :items="members"
+      :disabled="group === ''"
       label="Members"
       outlined
       multiple
       chips
-      v-if="!self && !all"
+      v-if="!self"
     >
       <template v-slot:prepend-item>
         <v-list-item ripple @click="toggle">
@@ -41,20 +42,21 @@
             </v-icon>
           </v-list-item-action>
           <v-list-item-content>
-            <v-list-item-title>
-              Select All
-            </v-list-item-title>
+            <v-list-item-title> Select All </v-list-item-title>
           </v-list-item-content>
         </v-list-item>
         <v-divider class="mt-2"></v-divider>
       </template>
     </v-select>
-    <v-text-field label="Message" outlined dense></v-text-field>
+    <v-text-field
+      label="Message"
+      outlined
+      dense
+      autocomplete="off"
+    ></v-text-field>
     <v-expansion-panels v-if="!self">
       <v-expansion-panel>
-        <v-expansion-panel-header>
-          Advance
-        </v-expansion-panel-header>
+        <v-expansion-panel-header> Advance </v-expansion-panel-header>
         <v-expansion-panel-content>
           <v-row v-for="(item, n) in select" :key="n" dense>
             <v-col cols="5">
@@ -80,6 +82,9 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
+import { db } from "@/firebase/init";
+
 export default {
   name: "HomeTransaction",
   data() {
@@ -87,15 +92,23 @@ export default {
       self: false,
       all: false,
       select: [],
-      items: ["Hrushi", "Sarvajeet", "Sayyam", "XYZ"],
+      members: [],
       group: "",
-      groups: ["Group1", "Group2", "Group3", "Group4"],
       advItemPrice: []
     };
   },
+  created() {
+    if (this.user.default) {
+      this.group = this.user.default;
+    }
+  },
   computed: {
+    ...mapGetters(["user", "getAllUsers", "getTransactions"]),
     allSelected() {
-      return this.select.length === this.items.length;
+      if (this.group) {
+        return this.select.length === this.members.length;
+      }
+      return null;
     },
     someSelected() {
       return this.select.length > 0 && !this.allSelected;
@@ -110,9 +123,22 @@ export default {
     self() {
       if (this.self) {
         this.select = [];
-        this.group = "";
         this.advItemPrice = [];
       }
+    },
+    group() {
+      db.collection("groups")
+        .doc(this.group)
+        .get()
+        .then(doc => {
+          this.members = doc
+            .data()
+            .members.filter(mem => mem !== this.user.id)
+            .map(member => {
+              return this.getAllUsers.find(o => o.id === member).name;
+            });
+        });
+      this.select = [];
     }
   },
   methods: {
@@ -121,7 +147,7 @@ export default {
         if (this.allSelected) {
           this.select = [];
         } else {
-          this.select = this.items.slice();
+          this.select = this.members.slice();
         }
       });
     }
