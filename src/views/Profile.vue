@@ -96,7 +96,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(["user", "getAllUsers", "getTransactions"]),
+    ...mapGetters(["user", "getAllUsers"]),
     getId() {
       if (this.selected && this.getAllUsers) {
         return this.selected.map(x => this.getAllUsers[x].id);

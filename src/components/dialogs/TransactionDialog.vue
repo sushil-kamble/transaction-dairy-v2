@@ -15,17 +15,17 @@
         <v-card-text>
           <v-sheet class="mt-2 pa-3" tile>
             <div class="d-flex justify-space-between">
-              <h3>{{ item.from }}</h3>
+              <h3>{{ getName(item.transfer[0]) }}</h3>
               <h1>{{ item.amount }}</h1>
-              <h3>{{ item.to }}</h3>
+              <h3>{{ getName(item.transfer[1]) }}</h3>
             </div>
             <v-divider class="my-3"></v-divider>
             <div class="text-center mt-2">
               <h4>
-                Dinner
+                {{ item.message }}
               </h4>
               <v-divider class="my-3"></v-divider>
-              <h4>10:40pm</h4>
+              <h4>{{ getFormattedTime(item.timestamp) }}</h4>
             </div>
           </v-sheet>
         </v-card-text>
@@ -47,6 +47,9 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
+import moment from "moment";
+
 export default {
   name: "TransactionDialog",
   props: ["item"],
@@ -54,6 +57,19 @@ export default {
     return {
       dialog: false
     };
+  },
+  computed: {
+    ...mapGetters(["user", "getAllUsers"])
+  },
+  methods: {
+    getName(id) {
+      return this.getAllUsers
+        ? this.getAllUsers.find(i => i.id === id)?.name ?? "You"
+        : "Loading";
+    },
+    getFormattedTime(time) {
+      return moment(time).format("lll");
+    }
   }
 };
 </script>

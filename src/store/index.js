@@ -7,11 +7,15 @@ export default new Vuex.Store({
   state: {
     user: null,
     transactions: null,
-    allUsers: null
+    allUsers: null,
+    currMember: null
   },
   getters: {
     user(state) {
       return state.user;
+    },
+    getCurrMember(state) {
+      return state.currMember;
     },
     getTransactions(state) {
       return state.transactions;
@@ -30,6 +34,9 @@ export default new Vuex.Store({
   mutations: {
     SET_USER(state, data) {
       state.user = data;
+    },
+    SET_MEMBER(state, data) {
+      state.currMember = data;
     },
     ...vuexfireMutations
   },
@@ -65,6 +72,7 @@ export default new Vuex.Store({
         db
           .collection("transactions")
           .where("transfer", "array-contains", auth.currentUser.uid)
+          .orderBy("timestamp", "desc")
       );
     }),
     unbindTransactions: firestoreAction(context => {
