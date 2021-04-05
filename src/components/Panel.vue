@@ -12,7 +12,7 @@
               </v-list-item-icon>
               <v-list-item-content>
                 <v-list-item-title
-                  v-text="getName(item.id)"
+                  v-text="getAllUsers[item.id]"
                 ></v-list-item-title>
               </v-list-item-content>
               <v-list-item-action>
@@ -77,7 +77,7 @@ export default {
     ...mapGetters(["user", "getAllUsers", "getTransactions"]),
     filteredMembers() {
       if (this.group && this.user && this.getTransactions) {
-        const filteredList = this.group.members.filter(
+        const filteredList = Object.keys(this.group.members).filter(
           mem => mem !== this.user.id
         );
         const computedList = [];
@@ -135,17 +135,11 @@ export default {
   },
   mounted() {
     if (this.user) {
-      db.collection("groups")
-        .doc(this.user.default)
+      db.ref("groups/" + this.user.default)
         .get()
         .then(doc => {
-          this.group = doc.data();
+          this.group = doc.val();
         });
-    }
-  },
-  methods: {
-    getName(id) {
-      return this.getAllUsers.find(i => i.id === id).name;
     }
   }
 };

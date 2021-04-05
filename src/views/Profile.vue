@@ -10,7 +10,7 @@
             <v-subheader>Your Groups</v-subheader>
             <v-list-item-group color="primary">
               <v-list-item
-                v-for="(item, i) in user.groups"
+                v-for="(item, i) in Object.keys(user.groups)"
                 :key="i"
                 active-class="white black--text"
                 to="/"
@@ -40,6 +40,7 @@
         <v-text-field
           label="Group"
           v-model="groupName"
+          :loading="loading"
           solo
           autocomplete="off"
           append-icon="mdi-send-circle"
@@ -50,11 +51,11 @@
           <span v-if="selected.length > 0">
             <v-chip
               label
-              v-for="(name, i) in getName"
+              v-for="(id, i) in getId"
               :key="i"
               class="mr-4 primary"
             >
-              {{ name }}
+              {{ getAllUsers[id] }}
             </v-chip>
           </span>
           <span v-else>
@@ -64,12 +65,14 @@
         <v-list dense v-if="getAllUsers" elevation="1">
           <v-subheader>Select Group Members</v-subheader>
           <v-list-item-group color="primary" multiple v-model="selected">
-            <v-list-item v-for="(item, i) in getAllUsers" :key="i">
+            <v-list-item v-for="(item, i) in filteredUsers" :key="i">
               <v-list-item-icon>
                 <v-icon>mdi-account</v-icon>
               </v-list-item-icon>
               <v-list-item-content>
-                <v-list-item-title v-text="item.name"></v-list-item-title>
+                <v-list-item-title
+                  v-text="getAllUsers[item]"
+                ></v-list-item-title>
               </v-list-item-content>
             </v-list-item>
           </v-list-item-group>
@@ -84,7 +87,8 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { db, firebase } from "@/firebase/init";
+import moment from "moment";
+import { db } from "@/firebase/init";
 
 export default {
   name: "Profile",
@@ -92,112 +96,120 @@ export default {
     return {
       selected: [],
       groupName: "",
-      feedback: ""
+      feedback: "",
+      loading: false
     };
   },
   computed: {
     ...mapGetters(["user", "getAllUsers"]),
     getId() {
-      if (this.selected && this.getAllUsers) {
-        return this.selected.map(x => this.getAllUsers[x].id);
+      if (this.selected && this.filteredUsers) {
+        return this.selected.map(x => this.filteredUsers[x]);
       } else return [];
     },
-    getName() {
-      if (this.selected && this.getAllUsers) {
-        return this.selected.map(x => this.getAllUsers[x].name);
-      } else return [];
+    filteredUsers() {
+      if (this.getAllUsers && this.user) {
+        return Object.keys(this.getAllUsers).filter(id => id !== this.user.id);
+      }
+      return [];
     }
   },
   methods: {
     createGroup() {
+      this.loading = true;
       if (this.user.groups) {
-        if (!this.user.groups.includes(this.groupName)) {
-          db.collection("groups")
-            .doc(this.groupName)
+        if (!Object.keys(this.user.groups).includes(this.groupName)) {
+          db.ref("groups/" + this.groupName)
             .get()
-            .then(doc => {
-              if (!doc.exists) {
-                const batch = db.batch();
-                batch.set(db.collection("groups").doc(this.groupName), {
-                  members: [this.user.id, ...this.getId]
-                });
-                batch.update(db.collection("users").doc(this.user.id), {
-                  groups: firebase.firestore.FieldValue.arrayUnion(
-                    this.groupName
-                  )
-                });
-                this.getId.forEach(id => {
-                  batch.update(db.collection("users").doc(id), {
-                    groups: firebase.firestore.FieldValue.arrayUnion(
-                      this.groupName
-                    )
+            .then(lookupGroup => {
+              if (!lookupGroup.exists()) {
+                const makeGroup = {};
+                const userIncluded = [this.user.id, ...this.getId];
+                db.ref("groups/" + this.groupName)
+                  .update({
+                    name: this.groupName,
+                    owner: this.user.id,
+                    dateCreated: moment().format()
+                  })
+                  .then(() => {
+                    userIncluded.forEach(id => {
+                      makeGroup[
+                        "groups/" + this.groupName + "/members/" + id
+                      ] = true;
+                      makeGroup[
+                        "users/" + id + "/groups/" + this.groupName
+                      ] = true;
+                    });
+                    db.ref()
+                      .update(makeGroup)
+                      .then(() => {
+                        this.resetGroup();
+                        this.feedback = "Group Created";
+                        console.log("Group created");
+                      });
                   });
-                });
-                batch.commit().then(() => {
-                  this.groupName = "";
-                  this.selected = [];
-                  this.feedback = "Group Created";
-                  console.log("Group created");
-                });
               } else {
-                this.feedback = "Group already exists";
-                console.log("That group already exists");
-                // Feedback that group already exists
+                this.resetGroup();
+                this.feedback = "You are already present in the group";
+                console.log("You are already present in the group");
               }
             });
         } else {
-          this.groupName = "";
-          this.selected = [];
+          this.resetGroup();
           this.feedback = "You are already present in the group";
           console.log("You are already present in the group");
           // Feedback you are already present in the group
         }
       } else {
         // First Group
-        db.collection("groups")
-          .doc(this.groupName)
+        db.ref("groups/" + this.groupName)
           .get()
-          .then(doc => {
-            if (!doc.exists) {
-              const batch1 = db.batch();
-              batch1.set(db.collection("groups").doc(this.groupName), {
-                members: [this.user.id, ...this.getId]
-              });
-              batch1.update(db.collection("users").doc(this.user.id), {
-                groups: firebase.firestore.FieldValue.arrayUnion(
-                  this.groupName
-                ),
-                default: this.groupName
-              });
-              this.getId.forEach(id => {
-                batch1.update(db.collection("users").doc(id), {
-                  groups: firebase.firestore.FieldValue.arrayUnion(
-                    this.groupName
-                  )
+          .then(lookupGroup => {
+            if (!lookupGroup.exists()) {
+              const makeGroupFirst = {};
+              const userIncluded = [this.user.id, ...this.getId];
+              db.ref("groups/" + this.groupName)
+                .update({
+                  name: this.groupName,
+                  owner: this.user.id,
+                  dateCreated: moment().format()
+                })
+                .then(() => {
+                  userIncluded.forEach(id => {
+                    makeGroupFirst[
+                      "groups/" + this.groupName + "/members/" + id
+                    ] = true;
+                    makeGroupFirst[
+                      "users/" + id + "/groups/" + this.groupName
+                    ] = true;
+                  });
+                  makeGroupFirst["users/" + this.user.id] = {
+                    default: this.groupName
+                  };
+                  db.ref()
+                    .update(makeGroupFirst)
+                    .then(() => {
+                      this.resetGroup();
+                      this.feedback = "Group Created";
+                    });
                 });
-              });
-              batch1.commit().then(() => {
-                this.groupName = "";
-                this.selected = [];
-                this.feedback = "Group Created";
-                console.log("Group created");
-              });
             } else {
-              this.groupName = "";
-              this.selected = [];
+              this.resetGroup();
               this.feedback = "Group Already exists";
               console.log("That group already exists");
-              // Feedback that group already exists
             }
           });
       }
     },
     defaultMethod(group) {
-      db.collection("users")
-        .doc(this.user.id)
-        .update({
-          default: group
-        });
+      db.ref("users/" + this.user.id).update({
+        default: group
+      });
+    },
+    resetGroup() {
+      this.groupName = "";
+      this.selected = [];
+      this.loading = false;
     }
   }
 };

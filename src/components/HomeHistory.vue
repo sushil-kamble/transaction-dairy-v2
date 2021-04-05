@@ -1,5 +1,5 @@
 <template>
-  <v-card class="pa-3">
+  <v-card class="pa-3" v-if="getAllUsers">
     <div
       :class="
         `d-flex justify-space-between px-4 white--text ${
@@ -8,7 +8,7 @@
       "
       v-if="getCurrMember"
     >
-      <h1>{{ getName(getCurrMember.id) }}</h1>
+      <h1>{{ getAllUsers[getCurrMember.id] }}</h1>
       <h1>{{ getCurrMember.amount }}</h1>
     </div>
     <h1 v-else>History</h1>
@@ -30,7 +30,7 @@
           <span v-else>-</span>
         </span>
         <span v-else>
-          {{ getName(item.transfer[0]) }}
+          {{ getAllUsers[item.transfer[0]] }}
         </span>
       </template>
       <template v-slot:item.transfer[1]="{ item }">
@@ -39,7 +39,7 @@
           <span v-else>-</span>
         </span>
         <span v-else>
-          {{ getName(item.transfer[1]) }}
+          {{ getAllUsers[item.transfer[1]] }}
         </span>
       </template>
       <template v-slot:item.amount="{ item }">
@@ -88,18 +88,18 @@
               class="d-flex justify-space-between"
               v-if="!setCurr.hasOwnProperty('self')"
             >
-              <h3>{{ getName(setCurr.transfer[0]) }}</h3>
+              <h3>{{ getAllUsers[setCurr.transfer[0]] }}</h3>
               <h1>{{ setCurr.amount }}</h1>
-              <h3>{{ getName(setCurr.transfer[1]) }}</h3>
+              <h3>{{ getAllUsers[setCurr.transfer[1]] }}</h3>
             </div>
             <div class="d-flex justify-space-between" v-else>
               <h3 v-if="setCurr.self === 'get'">
-                {{ getName(setCurr.transfer[0]) }}
+                {{ getAllUsers[setCurr.transfer[0]] }}
               </h3>
               <h3 v-else>-</h3>
               <h1>{{ setCurr.amount }}</h1>
               <h3 v-if="setCurr.self === 'buy'">
-                {{ getName(setCurr.transfer[1]) }}
+                {{ getAllUsers[setCurr.transfer[1]] }}
               </h3>
               <h3 v-else>-</h3>
             </div>

@@ -107,20 +107,15 @@ export default {
               })
               .then(() => {
                 this.$store.dispatch("fetchUser", data.user).then(() => {
-                  const batch = db.batch();
-                  batch.set(db.collection("users").doc(data.user.uid), {
+                  const batch = {};
+                  const uid = data.user.uid;
+                  batch["users/" + uid] = {
                     id: data.user.uid,
                     name: data.user.displayName,
                     email: data.user.email
-                  });
-                  batch.set(db.collection("displayName").doc(data.user.uid), {
-                    id: data.user.uid,
-                    name: data.user.displayName
-                  });
-                  batch.commit().then(() => {
-                    this.feedback = "";
-                    this.loading = false;
-                  });
+                  };
+                  batch["displayName/" + uid] = data.user.displayName;
+                  db.ref().update(batch);
                 });
               });
             this.$router.replace({ name: "Home" });

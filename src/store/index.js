@@ -1,12 +1,12 @@
 import Vue from "vue";
 import Vuex from "vuex";
-import { vuexfireMutations, firestoreAction } from "vuexfire";
-import { db, auth } from "@/firebase/init";
+import { vuexfireMutations, firebaseAction, firestoreAction } from "vuexfire";
+import { db, firestore, auth } from "@/firebase/init";
 Vue.use(Vuex);
 export default new Vuex.Store({
   state: {
     user: null,
-    transactions: null,
+    transactions: [],
     allUsers: null,
     currMember: null
   },
@@ -21,14 +21,7 @@ export default new Vuex.Store({
       return state.transactions;
     },
     getAllUsers(state) {
-      if (state.allUsers)
-        return state.allUsers
-          .map(x => ({
-            id: x.id,
-            name: x.name
-          }))
-          .filter(y => y.id !== auth.currentUser.uid);
-      else return [];
+      return state.allUsers;
     }
   },
   mutations: {
@@ -57,19 +50,13 @@ export default new Vuex.Store({
         context.commit("SET_USER", null);
       }
     },
-    bindUser: firestoreAction(context => {
-      return context.bindFirestoreRef(
-        "user",
-        db.collection("users").doc(auth.currentUser.uid)
-      );
-    }),
-    unbindUser: firestoreAction(context => {
-      return context.unbindFirestoreRef("user");
+    bindUser: firebaseAction(({ bindFirebaseRef }) => {
+      return bindFirebaseRef("user", db.ref("users/" + auth.currentUser.uid));
     }),
     bindTransactions: firestoreAction(context => {
       return context.bindFirestoreRef(
         "transactions",
-        db
+        firestore
           .collection("transactions")
           .where("transfer", "array-contains", auth.currentUser.uid)
           .orderBy("timestamp", "desc")
@@ -78,11 +65,14 @@ export default new Vuex.Store({
     unbindTransactions: firestoreAction(context => {
       return context.unbindFirestoreRef("transactions");
     }),
-    bindAllUsers: firestoreAction(context => {
-      return context.bindFirestoreRef("allUsers", db.collection("displayName"));
+    bindAllUsers: firebaseAction(({ bindFirebaseRef }) => {
+      return bindFirebaseRef("allUsers", db.ref("/displayName/"));
     }),
-    unbindAllUsers: firestoreAction(context => {
-      return context.unbindFirestoreRef("allUsers");
+    unbindUser: firebaseAction(({ unbindFirebaseRef }) => {
+      return unbindFirebaseRef("user");
+    }),
+    unbindAllUsers: firebaseAction(({ unbindFirebaseRef }) => {
+      return unbindFirebaseRef("allUsers");
     })
   }
 });
