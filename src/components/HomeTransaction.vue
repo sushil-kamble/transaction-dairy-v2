@@ -1,5 +1,5 @@
 <template>
-  <v-card class="pa-3">
+  <v-card class="pa-3 my-font">
     <div class="d-flex justify-space-between align-center">
       <div>
         <h2>Transaction</h2>
@@ -13,7 +13,7 @@
     <v-divider class="mt-1 mb-5"></v-divider>
 
     <v-text-field
-      label="Amount"
+      label="Total Amount"
       type="number"
       v-model="amount"
       outlined
@@ -80,7 +80,6 @@
         </v-expansion-panel-content>
       </v-expansion-panel>
     </v-expansion-panels>
-    <!--    v-if="amount && select.length > 0"-->
     <v-card
       class="mt-2 pa-3"
       :color="transactionAllowed ? 'green lighten-5' : 'red lighten-4'"
@@ -88,29 +87,34 @@
     >
       <v-row class="align-center">
         <v-col cols="4" class="text-center">
-          <h2 class="text-md-h3">{{ amount }}</h2>
-          <h4>{{ user.name }}</h4>
-          <h2 class="red px-1 white--text">
-            {{ computedArray[computedArray.length - 1] }}
-          </h2>
+          <v-card>
+            <h2 class="text-md-h3">{{ amount }}</h2>
+            <h2 class="red px-1 white--text">
+              {{ computedArray[computedArray.length - 1] }}
+            </h2>
+          </v-card>
         </v-col>
         <v-col cols="8">
-          <v-row
-            class="pa-2 d-flex justify-space-between"
-            dense
-            v-if="select.length > 0"
-          >
-            <v-col cols="12" v-for="(item, i) in select" :key="i" md="5">
-              <div class="d-flex justify-space-between">
-                <div class="light-blue lighten-5 flex-grow-1 pl-3">
-                  <h4>{{ getAllUsers[item] }}</h4>
+          <v-card class="pa-2" v-if="select.length > 0">
+            <v-row dense class="d-flex justify-space-between">
+              <v-col
+                cols="12"
+                v-for="(item, i) in select"
+                :key="i"
+                md="5"
+                class="blue-grey rounded white--text my-1"
+              >
+                <div class="d-flex justify-space-between">
+                  <div class="flex-grow-1 pl-3">
+                    <h4>{{ getAllUsers[item] }}</h4>
+                  </div>
+                  <div class="green white--text px-1">
+                    <h3>{{ computedArray[i] }}</h3>
+                  </div>
                 </div>
-                <div class="green white--text px-1">
-                  <h3>{{ computedArray[i] }}</h3>
-                </div>
-              </div>
-            </v-col>
-          </v-row>
+              </v-col>
+            </v-row>
+          </v-card>
           <v-card class="pa-2" dense v-else>
             <h3 class="text-center">Select at least one member</h3>
           </v-card>
@@ -127,7 +131,7 @@
             <v-icon left v-else>
               mdi-alert-circle-outline
             </v-icon>
-            Submit
+            {{ !feedback ? 'Submit' : feedback }}
           </v-btn>
         </v-col>
       </v-row>
@@ -142,7 +146,7 @@
           This means you are buying something of cost Rs. {{ parseInt(amount) }}
         </h6>
         <h6 v-else>
-          This means you are getting {{ Math.abs(parseInt(amount)) }} from
+          This means you are getting Rs {{ Math.abs(parseInt(amount)) }} from
           someone
         </h6>
       </div>
@@ -160,19 +164,19 @@
         <v-icon left v-else>
           mdi-alert-circle-outline
         </v-icon>
-        Submit
+        {{ !feedback ? 'Submit' : feedback }}
       </v-btn>
     </v-card>
   </v-card>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import { db, firestore } from "@/firebase/init";
-import moment from "moment";
+import { mapGetters } from 'vuex'
+import { db, firestore } from '@/firebase/init'
+import moment from 'moment'
 
 export default {
-  name: "HomeTransaction",
+  name: 'HomeTransaction',
   data() {
     return {
       self: false,
@@ -181,102 +185,103 @@ export default {
       amount: 0,
       select: [],
       members: [],
-      group: "",
-      message: "",
-      advTransaction: ["", "", ""],
-      feedback: ""
-    };
+      group: '',
+      message: '',
+      advTransaction: ['', '', ''],
+      feedback: ''
+    }
   },
   async mounted() {
     if (this.user.default) {
-      this.group = this.user.default;
-      await this.getGroupMembers();
+      this.group = this.user.default
+      await this.getGroupMembers()
     } else if (this.user.groups) {
-      this.group = Object.keys(this.user.groups)[0];
-      await db.ref("users/" + this.user.id).update({
+      this.group = Object.keys(this.user.groups)[0]
+      await db.ref('users/' + this.user.id).update({
         default: this.group
-      });
-      await this.getGroupMembers();
+      })
+      await this.getGroupMembers()
     } else {
-      this.self = true;
+      this.self = true
     }
   },
   computed: {
-    ...mapGetters(["user", "getAllUsers"]),
+    ...mapGetters(['user', 'getAllUsers']),
     allSelected() {
       if (this.group) {
-        return this.select.length === this.members.length;
+        return this.select.length === this.members.length
       }
-      return null;
+      return null
     },
     someSelected() {
-      return this.select.length > 0 && !this.allSelected;
+      return this.select.length > 0 && !this.allSelected
     },
     icon() {
-      if (this.allSelected) return "mdi-close-box";
-      if (this.someSelected) return "mdi-minus-box";
-      return "mdi-checkbox-blank-outline";
-    },
-    computedArray() {
-      const selectLength = this.select.length;
-      const base = Math.floor(this.amount / (selectLength + 1));
-      const individualCost = new Array(selectLength + 1).fill(base);
-      for (let i = 0; i < selectLength; i++) {
-        individualCost[i] = parseInt(this.advTransaction[i]) || base;
-      }
-      individualCost[selectLength] =
-        this.amount -
-        individualCost.slice(0, selectLength).reduce((pv, cv) => pv + cv, 0);
-      return individualCost;
+      if (this.allSelected) return 'mdi-close-box'
+      if (this.someSelected) return 'mdi-minus-box'
+      return 'mdi-checkbox-blank-outline'
     },
     transactionAllowed() {
       return !!(
         this.amount &&
         this.select.length > 0 &&
-        this.computedArray.every(val => val > 0)
-      );
+        this.computedArray.every(val => val >= 0) &&
+        this.computedArray.length < 6
+      )
+    },
+    computedArray() {
+      const selectLength = this.select.length
+      const lengthFilledAdv = this.advTransaction.filter(x => x).length + 1
+
+      if (lengthFilledAdv > 1) {
+        const individualCost = new Array(selectLength + 1).fill(0)
+        const filledAdvSum = this.advTransaction
+          .filter(x => x)
+          .reduce((pv, cv) => parseInt(pv) + parseInt(cv), 0)
+        const calFilledAdv = Math.floor(
+          (this.amount - filledAdvSum) / (selectLength + 2 - lengthFilledAdv)
+        )
+        for (let i = 0; i < selectLength + 1; i++) {
+          individualCost[i] = parseInt(this.advTransaction[i]) || calFilledAdv
+        }
+        return individualCost
+      }
+      return new Array(selectLength + 1).fill(
+        Math.floor(this.amount / (selectLength + 1))
+      )
     }
   },
   watch: {
     self() {
       if (this.self) {
-        this.select = [];
-        this.advTransaction = [];
+        this.select = []
+        this.advTransaction = []
       }
     }
   },
   methods: {
     getGroupMembers() {
-      db.ref("groups/" + this.group + "/members").once("value", snapshot => {
+      db.ref('groups/' + this.group + '/members').once('value', snapshot => {
         snapshot.forEach(childSnapshot => {
-          const id = childSnapshot.key;
+          const id = childSnapshot.key
           if (id !== this.user.id) {
-            this.members.push({ id: id, name: this.getAllUsers[id] });
+            this.members.push({ id: id, name: this.getAllUsers[id] })
           }
-        });
-        this.loading = false;
-      });
-    },
-    toggle() {
-      this.$nextTick(() => {
-        if (this.allSelected) {
-          this.select = [];
-        } else {
-          this.select = this.members.map(x => x.id);
-        }
-      });
+        })
+        this.loading = false
+      })
     },
     transaction() {
       if (!this.self) {
         if (this.amount !== 0 && this.select.length > 0) {
-          const batchTransaction = firestore.batch();
-          const computedLength = this.computedArray.length;
-          const myAmount = this.computedArray[computedLength - 1];
+          const batchTransaction = firestore.batch()
+          const computedLength = this.computedArray.length
+          const myAmount = this.computedArray[computedLength - 1]
           if (this.transactionAllowed) {
             for (let i = 0; i < computedLength - 1; i++) {
               if (this.computedArray[i] > 0) {
                 batchTransaction.set(
-                  firestore.collection("transactions").doc(),
+                  firestore.collection('transactions').doc(),
                   {
                     amount: this.computedArray[i],
                     transfer: [this.user.id, this.select[i]],
@@ -284,64 +289,74 @@ export default {
                     timestamp: moment().format(),
                     group: this.group
                   }
-                );
+                )
               }
             }
-            batchTransaction.set(firestore.collection("transactions").doc(), {
-              amount: myAmount,
-              transfer: [this.user.id, this.user.id],
-              message: this.message,
-              timestamp: moment().format(),
-              self: "buy"
-            });
+
+            if (myAmount > 0) {
+              batchTransaction.set(firestore.collection('transactions').doc(), {
+                amount: myAmount,
+                transfer: [this.user.id, this.user.id],
+                message: this.message,
+                timestamp: moment().format(),
+                self: 'buy'
+              })
+            }
             batchTransaction.commit().then(() => {
-              this.select = [];
-              this.amount = 0;
-              this.message = "";
-              this.advTransaction = [];
-            });
+              this.select = []
+              this.amount = 0
+              this.message = ''
+              this.advTransaction = []
+            })
           } else {
-            this.feedback = "You cant spend 0 or in negative";
+            this.feedback = 'No amount can be negative'
           }
         } else {
-          this.feedback = "Enter Amount and Select Members";
+          this.feedback = 'Enter Amount and Select Members'
         }
       } else {
         if (parseInt(this.amount) > 0) {
           firestore
-            .collection("transactions")
+            .collection('transactions')
             .doc()
             .set({
               amount: Math.abs(this.amount),
               transfer: [this.user.id, this.user.id],
               message: this.message,
               timestamp: moment().format(),
-              self: "buy"
+              self: 'buy'
             })
             .then(() => {
-              this.amount = 0;
-              this.message = "";
-            });
+              this.amount = 0
+              this.message = ''
+            })
         } else if (parseInt(this.amount) < 0) {
           firestore
-            .collection("transactions")
+            .collection('transactions')
             .doc()
             .set({
               amount: Math.abs(this.amount),
               transfer: [this.user.id, this.user.id],
               message: this.message,
               timestamp: moment().format(),
-              self: "get"
+              self: 'get'
             })
             .then(() => {
-              this.amount = 0;
-              this.message = "";
-            });
+              this.amount = 0
+              this.message = ''
+            })
         }
       }
+    },
+    toggle() {
+      this.$nextTick(() => {
+        if (this.allSelected) {
+          this.select = []
+        } else {
+          this.select = this.members.map(x => x.id)
+        }
+      })
     }
   }
-};
+}
 </script>
-
-<style scoped></style>

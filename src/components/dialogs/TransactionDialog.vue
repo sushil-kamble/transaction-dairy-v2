@@ -1,6 +1,6 @@
 <template>
   <div class="text-center">
-    <v-dialog v-model="dialog" width="500">
+    <v-dialog v-model="dialog" width="350">
       <template v-slot:activator="{ on, attrs }">
         <v-btn color="primary" dark v-bind="attrs" v-on="on" small>
           View
@@ -8,33 +8,58 @@
       </template>
 
       <v-card>
-        <v-card-title class="headline grey lighten-2">
-          Transaction Details
-        </v-card-title>
+        <div
+          :class="
+            `white--text text-uppercase my-font text-center ${priceColor}`
+          "
+        >
+          <h2 v-if="item.hasOwnProperty('self')">Self Transaction</h2>
+          <h2 v-else>
+            <span>{{ getAllUsers[item.transfer[0]] }}</span> -
+            <span>{{ getAllUsers[item.transfer[1]] }}</span>
+          </h2>
+        </div>
 
-        <v-card-text>
-          <v-sheet class="mt-2 pa-3" tile>
-            <div class="d-flex justify-space-between">
-              <h3>{{ getName(item.transfer[0]) }}</h3>
-              <h1>{{ item.amount }}</h1>
-              <h3>{{ getName(item.transfer[1]) }}</h3>
+        <v-card-text class="my-font">
+          <v-card class="mt-4 pa-2">
+            <div class="d-flex justify-space-between align-center">
+              <div class="flex-grow-1" v-if="!item.hasOwnProperty('self')">
+                <h2>{{ getAllUsers[item.transfer[0]] }}</h2>
+                <v-divider class="my-1"></v-divider>
+                <h2>{{ getAllUsers[item.transfer[1]] }}</h2>
+              </div>
+              <div class="flex-grow-1" v-else>
+                <h2>
+                  {{ item.self === "buy" ? "Money Spent" : "Money Received" }}
+                </h2>
+              </div>
+              <div class="ml-4 pa-2">
+                <h1 :class="`font-size ${priceColor}--text`">
+                  {{ item.amount }}
+                </h1>
+              </div>
             </div>
-            <v-divider class="my-3"></v-divider>
-            <div class="text-center mt-2">
-              <h4>
-                {{ item.message }}
-              </h4>
-              <v-divider class="my-3"></v-divider>
-              <h4>{{ getFormattedTime(item.timestamp) }}</h4>
-            </div>
-          </v-sheet>
+            <v-divider class="mt-2"></v-divider>
+            <h3 class="mt-2">{{ item.message }}</h3>
+            <v-divider class="my-1" v-if="item.message"></v-divider>
+            <h3>{{ getRelativeDate(item.timestamp) }}</h3>
+            <h4>{{ getFormattedTime(item.timestamp) }}</h4>
+          </v-card>
         </v-card-text>
 
         <v-divider></v-divider>
 
         <v-card-actions>
-          <v-btn color="error" text @click="dialog = false">
-            Report
+          <v-btn
+            color="error"
+            text
+            @click="
+              dialog = false
+              deleteTransaction(item.id)
+            "
+            v-if="item.transfer[0] === user.id"
+          >
+            Delete
           </v-btn>
           <v-spacer></v-spacer>
           <v-btn color="primary" text @click="dialog = false">
@@ -47,31 +72,43 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import moment from "moment";
+import { mapGetters } from "vuex"
+import moment from "moment"
+import { firestore } from "@/firebase/init"
 
 export default {
   name: "TransactionDialog",
-  props: ["item"],
+  props: ["item", "priceColor"],
   data() {
     return {
       dialog: false
-    };
+    }
   },
   computed: {
     ...mapGetters(["user", "getAllUsers"])
   },
   methods: {
-    getName(id) {
-      return this.getAllUsers
-        ? this.getAllUsers.find(i => i.id === id)?.name ?? "You"
-        : "Loading";
-    },
     getFormattedTime(time) {
-      return moment(time).format("lll");
+      return moment(time).format("lll")
+    },
+    getRelativeDate(time) {
+      return moment(time).fromNow()
+    },
+    deleteTransaction(id) {
+      firestore
+        .collection("transactions")
+        .doc(id)
+        .delete()
+        .then(() => {
+          //
+        })
     }
   }
-};
+}
 </script>
 
-<style scoped></style>
+<style scoped>
+.font-size {
+  font-size: 40px;
+}
+</style>

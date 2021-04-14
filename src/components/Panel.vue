@@ -1,7 +1,7 @@
 <template>
-  <v-row class="mt-4">
+  <v-row class="mt-4" dense>
     <v-col cols="12" sm="6">
-      <v-card height="220" class="pa-1">
+      <v-card height="220" class="pa-1 my-font">
         <v-list dense v-if="group">
           <h3 class="text-center text-uppercase">{{ user.default }}</h3>
           <v-divider class="mt-2"></v-divider>
@@ -30,18 +30,19 @@
           <v-btn small block :to="{ name: 'Profile' }">Create a Group</v-btn>
           <p class="mt-3">
             You can do self Transaction, unless someone puts you in group or you
-            create one.
+            create one. If you are already present in the group then make one
+            group default.
           </p>
         </div>
       </v-card>
     </v-col>
     <v-col cols="12" sm="6">
-      <v-card height="220" class="pa-1 text-center">
+      <v-card height="220" class="pa-1 text-center my-font">
         <h2>Computed Profit</h2>
         <v-divider class="mt-2"></v-divider>
         <h1
           :class="
-            `text-h2 py-8 ${
+            `large-font py-6 ${
               computedResult.amount >= 0 ? 'green--text' : 'red--text'
             }`
           "
@@ -55,52 +56,61 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import { db } from "@/firebase/init";
+import { mapGetters } from 'vuex'
+import { db } from '@/firebase/init'
 
 export default {
-  name: "Panel",
+  name: 'Panel',
   data() {
     return {
       group: null,
       selected: null
-    };
+    }
   },
   watch: {
     selected() {
       if (this.group) {
-        this.$store.commit("SET_MEMBER", this.filteredMembers[this.selected]);
+        this.$store.commit('SET_MEMBER', this.filteredMembers[this.selected])
       }
     }
   },
+  mounted() {
+    if (this.user) {
+      db.ref('groups/' + this.user.default)
+        .get()
+        .then(doc => {
+          this.group = doc.val()
+        })
+    }
+  },
   computed: {
-    ...mapGetters(["user", "getAllUsers", "getTransactions"]),
+    ...mapGetters(['user', 'getAllUsers', 'getTransactions']),
     filteredMembers() {
       if (this.group && this.user && this.getTransactions) {
         const filteredList = Object.keys(this.group.members).filter(
           mem => mem !== this.user.id
-        );
-        const computedList = [];
+        )
+        const computedList = []
         filteredList.map(member => {
           const amount =
             this.getTransactions
               .filter(tran => tran.transfer[1] === member)
               .reduce((acc, cur) => {
-                return acc + parseInt(cur.amount);
+                return acc + parseInt(cur.amount)
               }, 0) -
             this.getTransactions
               .filter(tran => tran.transfer[0] === member)
               .reduce((acc, cur) => {
-                return acc + parseInt(cur.amount);
-              }, 0);
+                return acc + parseInt(cur.amount)
+              }, 0)
           computedList.push({
             id: member,
             amount: amount
-          });
-        });
-        return computedList;
+          })
+        })
+        return computedList
       }
-      return [];
+      return []
     },
     computedResult() {
       if (this.getTransactions) {
@@ -108,41 +118,36 @@ export default {
           this.getTransactions
             .filter(tran => tran.transfer[0] === this.user.id)
             .reduce((acc, cur) => {
-              return acc + parseInt(cur.amount);
+              return acc + parseInt(cur.amount)
             }, 0) -
           this.getTransactions
             .filter(tran => tran.transfer[1] === this.user.id)
             .reduce((acc, cur) => {
-              return acc + parseInt(cur.amount);
-            }, 0);
+              return acc + parseInt(cur.amount)
+            }, 0)
         const self = this.getTransactions.reduce((acc, cur) => {
-          if ("self" in cur) {
-            if (cur.self === "get") {
-              return acc + cur.amount;
+          if ('self' in cur) {
+            if (cur.self === 'get') {
+              return acc + cur.amount
             } else {
-              return acc - cur.amount;
+              return acc - cur.amount
             }
           }
-          return acc;
-        }, 0);
+          return acc
+        }, 0)
         return {
           amount: amount + self,
           total: this.getTransactions.length
-        };
+        }
       }
-      return 0;
-    }
-  },
-  mounted() {
-    if (this.user) {
-      db.ref("groups/" + this.user.default)
-        .get()
-        .then(doc => {
-          this.group = doc.val();
-        });
+      return 0
     }
   }
-};
+}
 </script>
 
-<style scoped></style>
+<style scoped>
+.large-font {
+  font-size: 50px;
+}
+</style>

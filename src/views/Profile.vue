@@ -1,5 +1,5 @@
 <template>
-  <v-card class="pa-3 main-card" height="90vh">
+  <v-card class="pa-3 main-card my-font" height="90vh">
     <v-row v-if="user">
       <v-col cols="12" md="6">
         <v-card class="pa-3">
@@ -13,21 +13,25 @@
                 v-for="(item, i) in Object.keys(user.groups)"
                 :key="i"
                 active-class="white black--text"
-                to="/"
+                dense
               >
-                <v-list-item-icon>
-                  <v-icon>mdi-account</v-icon>
-                </v-list-item-icon>
                 <v-list-item-content>
-                  <v-list-item-title v-text="item"></v-list-item-title>
+                  <v-list-item-title
+                    v-text="item"
+                    class="text-uppercase"
+                  ></v-list-item-title>
                 </v-list-item-content>
                 <v-list-item-action>
-                  <v-btn
-                    x-small
-                    @click.prevent="defaultMethod(item)"
-                    :color="user.default === item ? 'success' : 'secondary'"
-                    >Default
-                  </v-btn>
+                  <div class="d-flex">
+                    <v-btn
+                      x-small
+                      @click.prevent="defaultMethod(item)"
+                      class="mr-4"
+                      :color="user.default === item ? 'success' : 'secondary'"
+                      >Default
+                    </v-btn>
+                    <ExitGroup :group="item" />
+                  </div>
                 </v-list-item-action>
               </v-list-item>
             </v-list-item-group>
@@ -47,7 +51,7 @@
           @click:append="createGroup"
         ></v-text-field>
         <v-card class="mb-3 pa-4" v-if="groupName">
-          <h3 class="text-center">{{ groupName }}</h3>
+          <h3 class="text-center">{{ groupLowerCase }}</h3>
           <span v-if="selected.length > 0">
             <v-chip
               label
@@ -77,8 +81,12 @@
             </v-list-item>
           </v-list-item-group>
         </v-list>
-        <v-card class="mt-3 pa-4 error" v-if="feedback">
-          <h3 class="text-center white--text">{{ feedback }}</h3>
+        <v-card
+          class="mt-3 pa-4"
+          v-if="feedback.length > 0"
+          :color="feedback[1]"
+        >
+          <h3 class="text-center white--text">{{ feedback[0] }}</h3>
         </v-card>
       </v-col>
     </v-row>
@@ -86,133 +94,148 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import moment from "moment";
-import { db } from "@/firebase/init";
+import { mapGetters } from 'vuex'
+import moment from 'moment'
+import { db } from '@/firebase/init'
+import ExitGroup from '@/components/dialogs/ExitGroup'
 
 export default {
-  name: "Profile",
+  name: 'Profile',
+  components: { ExitGroup },
   data() {
     return {
       selected: [],
-      groupName: "",
-      feedback: "",
+      groupName: '',
+      feedback: [],
       loading: false
-    };
+    }
   },
   computed: {
-    ...mapGetters(["user", "getAllUsers"]),
+    ...mapGetters(['user', 'getAllUsers']),
     getId() {
       if (this.selected && this.filteredUsers) {
-        return this.selected.map(x => this.filteredUsers[x]);
-      } else return [];
+        return this.selected.map(x => this.filteredUsers[x])
+      } else return []
     },
     filteredUsers() {
       if (this.getAllUsers && this.user) {
-        return Object.keys(this.getAllUsers).filter(id => id !== this.user.id);
+        return Object.keys(this.getAllUsers).filter(id => id !== this.user.id)
       }
-      return [];
+      return []
+    },
+    groupLowerCase() {
+      return this.groupName
+        .toLowerCase()
+        .replace(/[^A-Z0-9]+/gi, '')
+        .substring(0, 20)
     }
   },
   methods: {
     createGroup() {
-      this.loading = true;
-      if (this.user.groups) {
-        if (!Object.keys(this.user.groups).includes(this.groupName)) {
-          db.ref("groups/" + this.groupName)
+      if (
+        this.groupLowerCase.length > 2 &&
+        this.selected.length > 0 &&
+        this.selected.length < 5
+      ) {
+        this.loading = true
+        if (this.user.groups) {
+          if (!Object.keys(this.user.groups).includes(this.groupLowerCase)) {
+            db.ref('groups/' + this.groupLowerCase)
+              .get()
+              .then(lookupGroup => {
+                if (!lookupGroup.exists()) {
+                  const makeGroup = {}
+                  const userIncluded = [this.user.id, ...this.getId]
+                  db.ref('groups/' + this.groupLowerCase)
+                    .update({
+                      name: this.groupLowerCase,
+                      owner: this.user.id,
+                      dateCreated: moment().format()
+                    })
+                    .then(() => {
+                      userIncluded.forEach(id => {
+                        makeGroup[
+                          'groups/' + this.groupLowerCase + '/members/' + id
+                        ] = true
+                        makeGroup[
+                          'users/' + id + '/groups/' + this.groupLowerCase
+                        ] = true
+                      })
+                      db.ref()
+                        .update(makeGroup)
+                        .then(() => {
+                          this.resetGroup()
+                          this.feedback = ['Group Created', 'success']
+                        })
+                    })
+                } else {
+                  this.resetGroup()
+                  this.feedback = [
+                    'You are already present in the group',
+                    'error'
+                  ]
+                }
+              })
+          } else {
+            this.resetGroup()
+            this.feedback = ['You are already present in the group', 'error']
+            // Feedback you are already present in the group
+          }
+        } else {
+          // First Group
+          db.ref('groups/' + this.groupLowerCase)
             .get()
             .then(lookupGroup => {
               if (!lookupGroup.exists()) {
-                const makeGroup = {};
-                const userIncluded = [this.user.id, ...this.getId];
-                db.ref("groups/" + this.groupName)
+                const makeGroupFirst = {}
+                const userIncluded = [this.user.id, ...this.getId]
+                db.ref('groups/' + this.groupLowerCase)
                   .update({
-                    name: this.groupName,
+                    name: this.groupLowerCase,
                     owner: this.user.id,
                     dateCreated: moment().format()
                   })
                   .then(() => {
                     userIncluded.forEach(id => {
-                      makeGroup[
-                        "groups/" + this.groupName + "/members/" + id
-                      ] = true;
-                      makeGroup[
-                        "users/" + id + "/groups/" + this.groupName
-                      ] = true;
-                    });
+                      makeGroupFirst[
+                        'groups/' + this.groupLowerCase + '/members/' + id
+                      ] = true
+                      makeGroupFirst[
+                        'users/' + id + '/groups/' + this.groupLowerCase
+                      ] = true
+                    })
                     db.ref()
-                      .update(makeGroup)
+                      .update(makeGroupFirst)
                       .then(() => {
-                        this.resetGroup();
-                        this.feedback = "Group Created";
-                        console.log("Group created");
-                      });
-                  });
+                        this.resetGroup()
+                        this.feedback = ['Group Created', 'success']
+                      })
+                  })
               } else {
-                this.resetGroup();
-                this.feedback = "You are already present in the group";
-                console.log("You are already present in the group");
+                this.resetGroup()
+                this.feedback = ['Group Already exists', 'error']
               }
-            });
-        } else {
-          this.resetGroup();
-          this.feedback = "You are already present in the group";
-          console.log("You are already present in the group");
-          // Feedback you are already present in the group
+            })
         }
       } else {
-        // First Group
-        db.ref("groups/" + this.groupName)
-          .get()
-          .then(lookupGroup => {
-            if (!lookupGroup.exists()) {
-              const makeGroupFirst = {};
-              const userIncluded = [this.user.id, ...this.getId];
-              db.ref("groups/" + this.groupName)
-                .update({
-                  name: this.groupName,
-                  owner: this.user.id,
-                  dateCreated: moment().format()
-                })
-                .then(() => {
-                  userIncluded.forEach(id => {
-                    makeGroupFirst[
-                      "groups/" + this.groupName + "/members/" + id
-                    ] = true;
-                    makeGroupFirst[
-                      "users/" + id + "/groups/" + this.groupName
-                    ] = true;
-                  });
-                  makeGroupFirst["users/" + this.user.id] = {
-                    default: this.groupName
-                  };
-                  db.ref()
-                    .update(makeGroupFirst)
-                    .then(() => {
-                      this.resetGroup();
-                      this.feedback = "Group Created";
-                    });
-                });
-            } else {
-              this.resetGroup();
-              this.feedback = "Group Already exists";
-              console.log("That group already exists");
-            }
-          });
+        this.feedback = [
+          'Type Group name and select members (at least 1 & at most 4)',
+          'error'
+        ]
       }
     },
     defaultMethod(group) {
-      db.ref("users/" + this.user.id).update({
+      db.ref('users/' + this.user.id).update({
         default: group
-      });
+      })
     },
     resetGroup() {
-      this.groupName = "";
-      this.selected = [];
-      this.loading = false;
+      this.groupName = ''
+      this.selected = []
+      this.loading = false
     }
   }
-};
+}
 </script>
 
 <style scoped></style>

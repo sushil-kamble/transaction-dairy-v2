@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="my-font">
     <v-app-bar color="secondary" dense dark app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-spacer></v-spacer>
@@ -11,22 +11,26 @@
           v-model="group"
           active-class="deep-purple--text text--accent-4"
         >
-          <v-list-item>
-            <h1>Transaction Daily</h1>
-          </v-list-item>
+          <h1 class="ml-1">Transaction Daily</h1>
+          <v-divider></v-divider>
+          <div v-if="user" class="ml-1">
+            <h2>{{ user.name }}</h2>
+            <h4 class="text-uppercase">{{ user.default }}</h4>
+            <h4>{{ getCurrentDate() }}</h4>
+          </div>
 
           <v-divider class="mt-2 mb-4"></v-divider>
 
-          <v-list-item :to="user ? { name: 'Home' } : { name: 'Welcome' }">
+          <v-list-item :to="{ name: 'Home' }">
             <v-list-item-title>Home</v-list-item-title>
           </v-list-item>
 
-          <v-list-item :to="{ name: 'Profile' }">
+          <v-list-item :to="{ name: 'Profile' }" v-if="user">
             <v-list-item-title>Profile</v-list-item-title>
           </v-list-item>
 
-          <v-list-item :to="{ name: 'History' }">
-            <v-list-item-title>History</v-list-item-title>
+          <v-list-item :to="{ name: 'Info' }">
+            <v-list-item-title>Info</v-list-item-title>
           </v-list-item>
 
           <v-list-item :to="{ name: 'About' }">
@@ -36,10 +40,8 @@
           <v-divider></v-divider>
 
           <v-list-item v-if="user">
-            <v-list-item-title>
-              <v-btn @click="logout" color="error" small text block>
-                Logout
-              </v-btn>
+            <v-list-item-title @click="logout" class="error--text py-2">
+              Logout
             </v-list-item-title>
           </v-list-item>
         </v-list-item-group>
@@ -49,30 +51,32 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import { auth } from "@/firebase/init";
+import { mapGetters } from 'vuex'
+import { auth } from '@/firebase/init'
+import moment from 'moment'
 
 export default {
-  name: "Profile",
+  name: 'Profile',
   data() {
     return {
       drawer: false,
       group: null
-    };
+    }
   },
   computed: {
-    // map `this.user` to `this.$store.getters.user`
     ...mapGetters({
-      user: "user"
+      user: 'user'
     })
-    // Add your computed properties here
   },
   methods: {
     logout() {
       auth.signOut().then(() => {
-        this.$router.replace({ name: "Auth" });
-      });
+        this.$router.replace({ name: 'Auth' })
+      })
+    },
+    getCurrentDate() {
+      return moment().format('lll')
     }
   }
-};
+}
 </script>
