@@ -30,6 +30,10 @@
               Check Here
             </router-link>
           </li>
+          <li>
+            To filter transactions by Users click on the username (Left of
+            computed profit)
+          </li>
           <li>Simple and Elegant UI</li>
           <li>Realtime Updates</li>
           <li>Create / Delete / Leave group</li>

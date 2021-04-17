@@ -40,11 +40,15 @@
               Group Members(including you): 4
               <strong>(Select the group members)</strong>
             </li>
-            <li>Each Part: Rs 100 (400/4)</li>
-            <li>Person who pays: Rs 100 (Spent as Self Transaction)</li>
+            <li>One person pays the entire bill</li>
+            <li>Each Individual Part: Rs 100 (400/4)</li>
             <li>
               Remaining peoples: Have to give Rs 100 Each to the Person who pays
               (which will also be updated in the remaining peoples record)
+            </li>
+            <li>
+              Person who pays has also spent Rs 100 (Individual Part) (Spent as
+              Self Transaction)
             </li>
             <li><strong>Click on Submit</strong></li>
           </ul>

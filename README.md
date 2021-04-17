@@ -1,6 +1,17 @@
-# transaction-daily
+# Transaction Dairy v2
 
-## Project setup
+### Demo
+#### [Transaction Dairy v2 (Click Here)](http://transaction-dairy.web.app/)
+
+### Screenshot
+![alt text](https://drive.google.com/uc?export=view&id=1TUYro1LKZU1EZ8E-xy9IHEPj-2H8sgVl "Home Page")
+
+### Features
+* Smart Bill Split
+* Available on every device, PWA compatible & Responsive Ui
+* Authentication System
+
+### Project setup
 ```
 npm install
 ```

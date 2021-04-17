@@ -122,6 +122,7 @@
             elevation="2"
             class="mt-2 green white--text"
             @click.prevent="transaction"
+            :loading="btnLoading"
             block
             :disabled="!transactionAllowed"
           >
@@ -131,7 +132,7 @@
             <v-icon left v-else>
               mdi-alert-circle-outline
             </v-icon>
-            {{ !feedback ? 'Submit' : feedback }}
+            Submit
           </v-btn>
         </v-col>
       </v-row>
@@ -155,6 +156,7 @@
         elevation="2"
         class="mt-2 green white--text"
         @click.prevent="transaction"
+        :loading="btnLoading"
         block
         :disabled="parseInt(amount) === 0 || !amount"
       >
@@ -164,7 +166,7 @@
         <v-icon left v-else>
           mdi-alert-circle-outline
         </v-icon>
-        {{ !feedback ? 'Submit' : feedback }}
+        Submit
       </v-btn>
     </v-card>
   </v-card>
@@ -182,13 +184,13 @@ export default {
       self: false,
       all: false,
       loading: true,
+      btnLoading: false,
       amount: 0,
       select: [],
       members: [],
       group: '',
       message: '',
-      advTransaction: ['', '', ''],
-      feedback: ''
+      advTransaction: ['', '', '']
     }
   },
   async mounted() {
@@ -272,6 +274,7 @@ export default {
       })
     },
     transaction() {
+      this.btnLoading = true
       if (!this.self) {
         if (this.amount !== 0 && this.select.length > 0) {
           const batchTransaction = firestore.batch()
@@ -303,16 +306,13 @@ export default {
               })
             }
             batchTransaction.commit().then(() => {
-              this.select = []
-              this.amount = 0
-              this.message = ''
-              this.advTransaction = []
+              this.resetAll(true)
             })
           } else {
-            this.feedback = 'No amount can be negative'
+            this.resetAll(false)
           }
         } else {
-          this.feedback = 'Enter Amount and Select Members'
+          this.resetAll(false)
         }
       } else {
         if (parseInt(this.amount) > 0) {
@@ -327,8 +327,7 @@ export default {
               self: 'buy'
             })
             .then(() => {
-              this.amount = 0
-              this.message = ''
+              this.resetAll(true)
             })
         } else if (parseInt(this.amount) < 0) {
           firestore
@@ -342,11 +341,19 @@ export default {
               self: 'get'
             })
             .then(() => {
-              this.amount = 0
-              this.message = ''
+              this.resetAll(true)
             })
         }
       }
+    },
+    resetAll(status) {
+      if (status) {
+        this.select = []
+        this.amount = 0
+        this.message = ''
+        this.advTransaction = []
+      }
+      this.btnLoading = false
     },
     toggle() {
       this.$nextTick(() => {
