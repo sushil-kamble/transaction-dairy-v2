@@ -3,7 +3,7 @@
     <v-app-bar color="secondary" dense dark app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-spacer></v-spacer>
-      <v-toolbar-title v-if="user">{{ user.name }}'s Daily</v-toolbar-title>
+      <v-toolbar-title v-if="user">{{ user.name }}'s Dairy</v-toolbar-title>
     </v-app-bar>
     <v-navigation-drawer v-model="drawer" absolute temporary>
       <v-list nav>
@@ -11,7 +11,7 @@
           v-model="group"
           active-class="deep-purple--text text--accent-4"
         >
-          <h1 class="ml-1">Transaction Daily</h1>
+          <h1 class="ml-1">Transaction Dairy</h1>
           <v-divider></v-divider>
           <div v-if="user" class="ml-1">
             <h2>{{ user.name }}</h2>
